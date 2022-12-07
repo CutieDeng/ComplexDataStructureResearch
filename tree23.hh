@@ -23,6 +23,8 @@ class Tree23<K, void, void> {
 		using this_type = Tree23<K, void, void>; 
 		using key_type = K; 
 		using value_type = void; 
+		static_assert (noexcept (new (nullptr) key_type (std::declval<key_type>())), "exception not allowed on move operations"); 
+		static_assert (noexcept (std::declval<key_type>().~key_type()), "exception not allowed on deinit operations"); 
 	public: 
 		bool insert(K &&); 
 		bool remove(K const &); 
