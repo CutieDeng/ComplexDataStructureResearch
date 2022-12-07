@@ -59,7 +59,8 @@ class Tree23<K, void, void> {
 				handle_function_type unsafe3_handle_left; 
 				handle_function_type unsafe3_handle_middle; 
 				handle_function_type unsafe3_handle_right; 
-				void remove_max( key_type * ); 
+				void remove_max ( key_type * ); 
+				void remove_min ( key_type * ); 
 		}; 
 		struct node_grow_err {
 			bool has_sons; 
@@ -75,6 +76,10 @@ class Tree23<K, void, void> {
 		node_type *root_ {}; 
 	public: 
 		~Tree23(); 
+		key_type remove_min(); 
+		key_type remove_max(); 
+		bool empty() const noexcept ; 
+		operator bool () const noexcept ; 
 }; 
 
 template <typename K> 
@@ -258,9 +263,6 @@ Tree23<T, void, void> &operator += (Tree23<T, void, void> &lhs, T &&rhs) {
 	return lhs; 	
 } 
 
-template 
-class Tree23<int, void>; 
-
 template <typename K> 
 bool Tree23<K, void, void >::insert(K &&key) {
 	if (root_) {
@@ -413,6 +415,7 @@ bool Tree23<K, void, void>::node_type::remove(K const &key) {
 				if (node == key) {
 					// node_type *l = ptrs[0]->max_node(); 
 					try {
+						((key_type *)buffer[0]) -> ~key_type(); 
 						ptrs[0]->remove_max((key_type *)buffer[0]); 
 					} catch (leaf_node_disappear_err &err) {
 						unsafe2_handle_left(err); 
@@ -457,6 +460,7 @@ bool Tree23<K, void, void>::node_type::remove(K const &key) {
 				try {
 					if (lnode == key) {
 						branch = 1; 
+						lnode.~key_type(); 
 						ptrs[0]->remove_max(&lnode); 
 						return true; 
 					} else if (!(lnode < key)) {
@@ -464,6 +468,7 @@ bool Tree23<K, void, void>::node_type::remove(K const &key) {
 						return ptrs[0]->remove(key); 
 					} else if (rnode == key) {
 						branch = 2; 
+						rnode.~key_type(); 
 						ptrs[1] -> remove_max(&rnode); 
 						return true; 
 					} else if (!(rnode < key)) {
@@ -741,7 +746,6 @@ void Tree23<K, void, void>::node_type::remove_max( key_type *val ) {
 			} 
 		} 
 	} else {
-		val -> ~key_type(); 	
 		new (val) key_type ( std::move ( * ( key_type * ) buffer [cnt - 1] ) ); 
 		((key_type *) buffer[cnt-1]) -> ~key_type(); 
 		if (cnt == 1) {
@@ -751,3 +755,64 @@ void Tree23<K, void, void>::node_type::remove_max( key_type *val ) {
 		}
 	} 
 } 
+
+template <typename K> 
+void Tree23<K, void, void>::node_type::remove_min ( key_type *val ) {
+	if (has_sons) {
+		try {
+			ptrs[0]->remove_max(val); 
+		} catch (leaf_node_disappear_err &err) {
+			if (cnt == 1) {
+				unsafe2_handle_left(err); 
+			} else if (cnt == 2) {
+				unsafe3_handle_left(err); 
+			} else {
+				throw Tree23Error::IllegalNode; 
+			} 
+		} 
+	} else {
+		new (val) key_type ( std::move ( * ( key_type * ) buffer [0] ) ); 
+		((key_type *) buffer[0]) -> ~key_type(); 
+		if (cnt == 1) {
+			throw leaf_node_disappear_err { .has = false }; 
+		} else {
+			cnt = 1; 
+			new (buffer[0] ) key_type ( std::move (*(key_type *) buffer[1] )); 
+			((key_type *)buffer[1])->~key_type(); 
+		}
+	} 	
+}
+
+template <typename K> 
+typename Tree23<K, void, void>::key_type Tree23<K, void, void>::remove_min() {
+	char buffer[sizeof (key_type )]; 
+	try {
+		root_->remove_min((key_type *) buffer); 
+	} catch (leaf_node_disappear_err &err) {
+		delete root_; 
+		root_ = err.has ? err.ptr : nullptr; 
+	} 	
+	return std::move(*(key_type *) buffer); 
+}
+
+template <typename K> 
+typename Tree23<K, void, void>::key_type Tree23<K, void, void>::remove_max() {
+	char buffer[sizeof (key_type )]; 
+	try {
+		root_->remove_max((key_type *) buffer); 
+	} catch (leaf_node_disappear_err &err) {
+		delete root_; 
+		root_ = err.has ? err.ptr : nullptr; 
+	} 	
+	return std::move(*(key_type *) buffer); 
+}
+		
+template <typename K> 
+bool Tree23<K, void, void>::empty() const noexcept {
+	return !root_; 
+} 
+
+template <typename K> 
+Tree23<K, void, void>::operator bool () const noexcept {
+	return !empty(); 
+}
