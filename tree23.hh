@@ -19,7 +19,7 @@ using Set23 = Tree23<K, void, void>;
 
 template <typename K> 
 class Tree23<K, void, void> {
-	private: 
+	public: 
 		using this_type = Tree23<K, void, void>; 
 		using key_type = K; 
 		using value_type = void; 
@@ -80,6 +80,7 @@ class Tree23<K, void, void> {
 		key_type remove_max(); 
 		bool empty() const noexcept ; 
 		operator bool () const noexcept ; 
+		key_type *unsafe_fetch(key_type const &); 
 }; 
 
 template <typename K> 
@@ -815,4 +816,30 @@ bool Tree23<K, void, void>::empty() const noexcept {
 template <typename K> 
 Tree23<K, void, void>::operator bool () const noexcept {
 	return !empty(); 
+}
+
+template <typename K> 
+typename Tree23<K, void, void>::key_type *Tree23<K, void, void>::unsafe_fetch(typename Tree23<K, void, void>::key_type const &other) {
+	node_type *now = root_; 
+	while (1) {
+		auto &lnode = * (key_type *) now -> buffer[0]; 
+		if (lnode == other) {
+			return &lnode; 
+		} else if (!(lnode < other)) {
+			now = now->ptrs[0]; 
+		} else {
+			if (now -> cnt == 1) {
+				now = now -> ptrs[1]; 
+			} else {
+				auto &rnode = * (key_type *) now -> buffer[1]; 
+				if (rnode == other) {
+					return &rnode; 
+				} else if (rnode < other) {
+					now = now->ptrs[2]; 
+				} else {
+					now = now->ptrs[1]; 
+				} 
+			}
+		} 
+	}
 }
