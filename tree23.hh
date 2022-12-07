@@ -80,7 +80,7 @@ class Tree23<K, void, void> {
 		key_type remove_max(); 
 		bool empty() const noexcept ; 
 		operator bool () const noexcept ; 
-		key_type *unsafe_fetch(key_type const &); 
+		key_type const *unsafe_fetch(key_type const &); 
 }; 
 
 template <typename K> 
@@ -819,7 +819,7 @@ Tree23<K, void, void>::operator bool () const noexcept {
 }
 
 template <typename K> 
-typename Tree23<K, void, void>::key_type *Tree23<K, void, void>::unsafe_fetch(typename Tree23<K, void, void>::key_type const &other) {
+typename Tree23<K, void, void>::key_type const *Tree23<K, void, void>::unsafe_fetch(typename Tree23<K, void, void>::key_type const &other) {
 	node_type *now = root_; 
 	while (1) {
 		auto &lnode = * (key_type *) now -> buffer[0]; 
